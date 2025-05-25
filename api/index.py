@@ -10,20 +10,17 @@ class handler(BaseHTTPRequestHandler):
         query = parse_qs(urlparse(self.path).query)
         names = query.get('name', [])
 
-        # Load marks data
+        # Load and convert the JSON array to a dictionary for fast lookup
         json_path = os.path.join(os.path.dirname(__file__), '..', 'q-vercel-python.json')
         with open(json_path) as f:
-            data = json.load(f)
+            data_list = json.load(f)
+            data = {item["name"]: item["marks"] for item in data_list}
 
-        # Get marks for requested names
+        # For each requested name, get the mark or None (which becomes null in JSON)
         marks = [data.get(name, None) for name in names]
 
-        # Set response headers
+        # Respond with the required JSON
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-
-        # Respond with marks
-        response = json.dumps({"marks": marks})
-        self.wfile.write(response.encode())
+        self.wfile.write(json.dumps({"marks": marks}).encode())
